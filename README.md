@@ -23,6 +23,8 @@ https://github.com/somex6/Darey.io-Projects/blob/main/project22.md
 
 https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
 
+https://hub.docker.com/r/dareyregistry/curl
+
 Anthony's support
 
 {eksctl create cluster --name devtest --version 1.24 --region eu-west-1 --nodegroup-name linux-nodes --node-type t2.medium --nodes 2

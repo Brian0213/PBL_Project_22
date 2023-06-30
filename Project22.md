@@ -190,12 +190,6 @@ Self Side Task:
 
 2. Write a Pod and a Service manifests, ensure that you can access the Tooling app’s frontend using port-forwarding feature.
 
-Expose a Service on a server’s public IP address & static port
-
-Sometimes, it may be needed to directly access the application using the public IP of the server (when we speak of a K8s cluster we can replace ‘server’ with ‘node’) the Pod is running on. This is when the NodePort service type comes in handy.
-
-A Node port service type exposes the service on a static port on the node’s IP address. NodePorts are in the 30000-32767 range by default, which means a NodePort is unlikely to match a service’s intended port (for example, 80 may be exposed as 30080).
-
 Update the nginx-service yaml to use a NodePort Service:
 
 [Kubectl Get Nginx Pod](./Screenshots/nginx-service-update.PNG)
@@ -223,3 +217,211 @@ Running curl command and pointing it to the IP address of the Nginx Pod:
 `curl -v 192.168.48.219`
 
 [Curl](./Screenshots/curl-output.PNG)
+
+Expose a Service on a server’s public IP address & static port
+
+Sometimes, it may be needed to directly access the application using the public IP of the server (when we speak of a K8s cluster we can replace ‘server’ with ‘node’) the Pod is running on. This is when the NodePort service type comes in handy.
+
+A Node port service type exposes the service on a static port on the node’s IP address. NodePorts are in the 30000-32767 range by default, which means a NodePort is unlikely to match a service’s intended port (for example, 80 may be exposed as 30080).
+
+[Browser Output](./Screenshots/browser-output.PNG)
+
+
+How Kubernetes ensures desired number of Pods is always running?
+When we define a Pod manifest and appy it – we create a Pod that is running until it’s terminated for some reason (e.g., error, Node reboot or some other reason), but what if we want to declare that we always need at least 3 replicas of the same Pod running at all times? Then we must use an ResplicaSet (RS) object – it’s purpose is to maintain a stable set of Pod replicas running at any given time. As such, it is often used to guarantee the availability of a specified number of identical Pods.
+
+Note: In some older books or documents you might find the old version of a similar object – ReplicationController (RC), it had similar purpose, but did not support set-base label selectors and it is now recommended to use ReplicaSets instead, since it is the next-generation RC.
+
+Let us delete our nginx-pod Pod:
+
+`kubectl delete -f nginx-pod.yaml`
+
+[Browser Output](./Screenshots/nginx-pod-delete.PNG)
+
+COMMON KUBERNETES OBJECTS
+Pod
+Namespace
+ResplicaSet (Manages Pods)
+DeploymentController (Manages Pods)
+StatefulSet
+DaemonSet
+Service
+ConfigMap
+Volume
+Job/Cronjob
+The very first concept to understand is the difference between how Docker and Kubernetes run containers – with Docker, every docker run command will run an image (representing an application) as a container. The running container is a Docker’s smallest entity, it is the most basic deployable object. Kubernetes on the other hand operates with pods instead of containers, a pods encapsulates a container. Kubernetes uses pods as its smallest, and most basic deployable object with a unique feature that allows it to run multiple containers within a single Pod. It is not the most common pattern – to have more than one container in a Pod, but there are cases when this capability comes in handy.
+
+In the world of docker, or docker compose, to run the Tooling app, you must deploy separate containers for the application and the database. But in the world of Kubernetes, you can run both: application and database containers in the same Pod. When multiple containers run within the same Pod, they can directly communicate with each other as if they were running on the same localhost. Although running both the application and database in the same Pod is NOT a recommended approach.
+
+A Pod that contains one container is called single container pod and it is the most common Kubernetes use case. A Pod that contains multiple co-related containers is called multi-container pod. There are few patterns for multi-container Pods; one of them is the sidecar container pattern – it means that in the same Pod there is a main container and an auxiliary one that extends and enhances the functionality of the main one without changing it.
+
+There are other patterns, such as: init container, adapter container, ambassador container. These are more advanced topics that you can study on your own, let us continue with the other objects.
+
+We will not go into the theoretical details of all the objects, rather we will begin to experience them in action.
+
+Understanding the common YAML fields for every Kubernetes object
+Every Kubernetes object includes object fields that govern the object’s configuration:
+
+kind: Represents the type of kubernetes object created. It can be a Pod, DaemonSet, Deployments or Service.
+version: Kubernetes api version used to create the resource, it can be v1, v1beta and v2. Some of the kubernetes features can be released under beta and available for general public usage.
+metadata: provides information about the resource like name of the Pod, namespace under which the Pod will be running,
+labels and annotations.
+spec: consists of the core information about Pod. Here we will tell kubernetes what would be the expected state of resource, Like container image, number of replicas, environment variables and volumes.
+status: consists of information about the running object, status of each container. Status field is supplied and updated by Kubernetes after creation. This is not something you will have to put in the YAML manifest.
+Deploying a random Pod
+Lets see what it looks like to have a Pod running in a k8s cluster. This section is just to illustrate and get you to familiarise with how the object’s fields work. Lets deploy a basic Nginx container to run inside a Pod.
+
+apiVersion is v1
+kind is Pod
+metatdata has a name which is set to nginx-pod
+The spec section has further information about the Pod. Where to find the image to run the container – (This defaults to Docker Hub), the port and protocol.
+The structure is similar for any Kubernetes objects, and you will get to see them all as we progress.
+
+1. Create a Pod yaml manifest on your master node:
+
+`sudo cat <<EOF | sudo tee ./nginx-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+name: nginx-pod
+spec:
+containers:
+- image: nginx:latest
+name: nginx-pod
+ports:
+- containerPort: 80
+  protocol: TCP
+EOF`
+
+[Master Node](./Screenshots/master-node-mani.png)
+
+2. Apply the manifest with the help of kubectl:
+
+`kubectl apply -f nginx-pod.yaml`
+
+[Master Node](./Screenshots/mani-nginx-pod.png)
+
+3. Get an output of the pods running in the cluster:
+
+`kubectl get pods`
+
+[Kube Get Pods](./Screenshots/kube-get-pod.png)
+
+- To see other fields introduced by kubernetes after you have deployed the resource, simply run below command, and examine the output. You will see other fields that kubernetes updates from time to time to represent the state of the resource within the cluster. -o simply means the output format:
+
+`kubectl get pod nginx-pod -o yaml`  OR `kubectl describe pod nginx-pod`
+
+[Output -o](./Screenshots/update1.png)
+
+[Output -o](./Screenshots/update2.png)
+
+[Output -o](./Screenshots/update3.png)
+
+ACCESSING THE APP FROM THE BROWSER
+Now you have a running Pod. What’s next?
+
+The ultimate goal of any solution is to access it either through a web portal or some application (e.g., mobile app). We have a Pod with Nginx container, so we need to access it from the browser. But all you have is a running Pod that has its own IP address which cannot be accessed through the browser. To achieve this, we need another Kubernetes object called Service to accept our request and pass it on to the Pod.
+
+A service is an object that accepts requests on behalf of the Pods and forwards it to the Pod’s IP address. If you run the command below, you will be able to see the Pod’s IP address. But there is no way to reach it directly from the outside world.
+
+`kubectl get pod nginx-pod  -o wide`
+
+[Get Nginx Pod](./Screenshots/serv-out.png)
+
+Let us try to access the Pod through its IP address from within the K8s cluster. To do this,
+
+1. We need an image that already has curl software installed. You can check it out here
+
+`dareyregistry/curl`
+
+2. Run kubectl to connect inside the container:
+
+`kubectl run curl --image=dareyregistry/curl -i --tty`
+
+3. Run curl and point to the IP address of the Nginx Pod (Use the IP address of your own Pod)
+
+`curl -v 172.50.202.214:80`
+
+[Curl Pod Ip](./Screenshots/curl-nginx-nod-ip.png)
+
+If the use case for your solution is required for internal use ONLY, without public Internet requirement. Then, this should be OK. But in most cases, it is NOT!
+
+Assuming that your requirement is to access the Nginx Pod internally, using the Pod’s IP address directly as above is not a reliable choice because Pods are ephemeral. They are not designed to run forever. When they die and another Pod is brought back up, the IP address will change and any application that is using the previous IP address directly will break.
+
+To solve this problem, kubernetes uses Service – An object that abstracts the underlining IP addresses of Pods. A service can serve as a load balancer, and a reverse proxy which basically takes the request using a human readable DNS name, resolves to a Pod IP that is running and forwards the request to it. This way, you do not need to use an IP address. Rather, you can simply refer to the service name directly.
+
+Let us create a service to access the Nginx Pod.
+
+1. Create a Service yaml manifest file:
+
+`sudo cat <<EOF | sudo tee ./nginx-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  selector:
+    app: nginx-pod 
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+EOF`
+
+[New Nginx Service](./Screenshots/new-serv.png)
+
+2. Create a nginx-service resource by applying your manifest:
+
+`kubectl apply -f nginx-service.yaml`
+
+[Manifest Apply Nginx Service](./Screenshots/apply-output.png)
+
+3. Check the created service:
+
+`kubectl apply -f nginx-service.yaml`
+
+[Check Service](./Screenshots/serv-output.png)
+
+Observation:
+
+The TYPE column in the output shows that there are different service types.
+
+ClusterIP
+NodePort
+LoadBalancer &
+Headless Service
+Since we did not specify any type, it is obvious that the default type is ClusterIP
+
+Now that we have a service created, how can we access the app? Since there is no public IP address, we can leverage kubectl's port-forward functionality.
+
+`kubectl  port-forward svc/nginx-service 8089:80`
+
+8089 is an arbitrary port number on your laptop or client PC, and we want to tunnel traffic through it to the port number of the nginx-service 80.
+
+Unfortunately, this will not work quite yet. Because there is no way the service will be able to select the actual Pod it is meant to route traffic to. If there are hundreds of Pods running, there must be a way to ensure that the service only forwards requests to the specific Pod it is intended for.
+
+To make this work, you must reconfigure the Pod manifest and introduce labels to match the selectors key in the field section of the service manifest.
+
+1. Update the Pod manifest with the below and apply the manifest:
+
+[Pod Update](./Screenshots/update-nginx-pod.png)
+
+Notice that under the metadata section, we have now introduced labels with a key field called app and its value nginx-pod. This matches exactly the selector key in the service manifest.
+
+The key/value pairs can be anything you specify. These are not Kubernetes specific keywords. As long as it matches the selector, the service object will be able to route traffic to the Pod.
+
+Apply the manifest with:
+
+`kubectl apply -f nginx-pod.yaml`
+
+[Pod Configured](./Screenshots/pod-confg.png)
+
+2. Run kubectl port-forward command again
+
+`kubectl  port-forward svc/nginx-service 8089:80`
+
+[Porf Forward](./Screenshots/port-forward-ot.png)
+
+Then go to your web browser and enter localhost:8089 – You should now be able to see the nginx page in the browser.
+
+[Browser Output](./Screenshots/browser-output2.png)
