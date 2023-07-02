@@ -25,6 +25,10 @@ https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
 
 https://hub.docker.com/r/dareyregistry/curl
 
+Kubernetes Documentation: [https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/]
+
+Kubernetes Deployment: [https://kubernetes.io/docs/concepts/workloads/controllers/deployment/]
+
 Anthony's support
 
 {eksctl create cluster --name devtest --version 1.24 --region eu-west-1 --nodegroup-name linux-nodes --node-type t2.medium --nodes 2

@@ -425,3 +425,293 @@ Apply the manifest with:
 Then go to your web browser and enter localhost:8089 – You should now be able to see the nginx page in the browser.
 
 [Browser Output](./Screenshots/browser-output2.png)
+
+CREATE A REPLICA SET
+Let us create a rs.yaml manifest for a ReplicaSet object:
+
+`apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: nginx-rs
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx-pod
+  template:
+    metadata:
+      name: nginx-pod
+      labels:
+        app: nginx-pod
+    spec:
+      containers:
+        - name: nginx-pod
+          image: nginx:latest
+          ports:
+            - containerPort: 80
+              protocol: TCP`
+
+[Browser Output](./Screenshots/rs.yaml-create.png)
+
+Run tha apply command:
+
+`kubectl apply -f rs.yaml`
+
+[Replicaset Output](./Screenshots/replicaset-create.png)
+
+The manifest file of ReplicaSet consist of the following fields:
+
+apiVersion: This field specifies the version of kubernetes Api to which the object belongs. ReplicaSet belongs to apps/v1 apiVersion.
+kind: This field specify the type of object for which the manifest belongs to. Here, it is ReplicaSet.
+metadata: This field includes the metadata for the object. It mainly includes two fields: name and labels of the ReplicaSet.
+spec: This field specifies the label selector to be used to select the Pods, number of replicas of the Pod to be run and the container or list of containers which the Pod will run. In the above example, we are running 3 replicas of nginx container.
+
+Let us check what Pods have been created:
+
+`kubectl get pods`
+
+[Get Pods Output](./Screenshots/replicaset-get-pods.png)
+
+Here we see three ngix-pods with some random suffixes (e.g., -6rsd5) – it means, that these Pods were created and named automatically by some other object (higher level of abstraction) such as ReplicaSet.
+
+Try to delete one of the Pods:
+
+`kubectl delete po nginx-pod-j784r`
+
+You can see, that we still have all 3 Pods, but one has been recreated (can you differentiate the new one?)
+
+Describe the ReplicaSet created:
+
+`kubectl get rs -o wide`
+
+[Explore Replicaset](./Screenshots/replicaset-explore.png)
+
+Notice, that ReplicaSet understands which Pods to create by using SELECTOR key-value pair.
+
+Get detailed information of a ReplicaSet
+To display detailed information about any Kubernetes object, you can use 2 differen commands:
+
+kubectl describe %object_type% %object_name% (e.g. kubectl describe rs nginx-rs)
+kubectl get %object_type% %object_name% -o yaml (e.g. kubectl describe rs nginx-rs -o yaml)
+Try both commands in action and see the difference. Also try get with -o json instead of -o yaml and decide for yourself which output option is more readable for you.
+
+`kubectl describe rs nginx-rs`
+
+[Describe Replicaset](./Screenshots/replicaset-describe.png)
+
+Scale ReplicaSet up and down:
+In general, there are 2 approaches of Kubernetes Object Management: imperative and declarative.
+
+Let us see how we can use both to scale our Replicaset up and down:
+
+Imperative:
+
+We can easily scale our ReplicaSet up by specifying the desired number of replicas in an imperative command, like this:
+
+`kubectl scale rs nginx-rs --replicas=5`
+
+`kubectl get pods`
+
+[Scale Pod Replicaset](./Screenshots/replicaset-scale-pod.png)
+
+Declarative:
+
+Declarative way would be to open our rs.yaml manifest, change desired number of replicas in respective section:
+
+`spec:
+  replicas: 3'
+
+and applying the updated manifest:
+
+`kubectl apply -f rs.yaml`
+
+[UNRECOMMENDED WAY to edit
+
+There is another method – ‘ad-hoc’, it is definitely not the best practice and we do not recommend using it, but you can edit an existing ReplicaSet with following command:
+
+`kubectl edit -f rs.yaml`]
+
+Advanced label matching
+As Kubernetes mature as a technology, so does its features and improvements to k8s objects. ReplicationControllers do not meet certain complex business requirements when it comes to using selectors. Imagine if you need to select Pods with multiple lables that represents things like:
+
+Application tier: such as Frontend, or Backend
+Environment: such as Dev, SIT, QA, Preprod, or Prod
+So far, we used a simple selector that just matches a key-value pair and check only ‘equality’:
+
+`selector:
+    app: nginx-pod`
+
+But in some cases, we want ReplicaSet to manage our existing containers that match certain criteria, we can use the same simple label matching or we can use some more complex conditions, such as:
+
+`- in
+ - not in
+ - not equal
+ - etc...`
+
+Let us look at the following manifest file:
+
+``
+In the above spec file, under the selector, matchLabels and matchExpression are used to specify the key-value pair. The matchLabel works exactly the same way as the equality-based selector, and the matchExpression is used to specify the set based selectors. This feature is the main differentiator between ReplicaSet and previously mentioned obsolete ReplicationController.
+
+Get the replication set:
+
+`kubectl get rs nginx-rs -o wide`
+
+
+USING AWS LOAD BALANCER TO ACCESS YOUR SERVICE IN KUBERNETES.
+Note: You will only be able to test this using AWS EKS. You don not have to set this up in current project yet. In the next project, you will update your Terraform code to build an EKS cluster.
+
+You have previously accessed the Nginx service through ClusterIP, and NodeIP, but there is another service type – Loadbalancer. This type of service does not only create a Service object in K8s, but also provisions a real external Load Balancer (e.g. Elastic Load Balancer – ELB in AWS)
+
+To get the experience of this service type, update your service manifest and use the LoadBalancer type. Also, ensure that the selector references the Pods in the replica set.
+
+`apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: nginx-pod 
+  ports:
+    - protocol: TCP
+      port: 80 # This is the port the Loadbalancer is listening at
+      targetPort: 80 # This is the port the container is listening at`
+
+Apply the configuration:
+
+`kubectl apply -f nginx-service.yaml`
+
+Get the newly created service :
+
+`kubectl get service nginx-service`
+
+[New Service Output](./Screenshots/new-serv-output.png)
+
+An ELB resource will be created in your AWS console.
+
+[ELB AWS Output](./Screenshots/elb-aws.png)
+
+A Kubernetes component in the control plane called Cloud-controller-manager is responsible for triggeriong this action. It connects to your specific cloud provider’s (AWS) APIs and create resources such as Load balancers. It will ensure that the resource is appropriately tagged:
+
+[ELB Kubernetes](./Screenshots/elb-tag-kube.png)
+
+Get the output of the entire yaml for the service. You will some additional information about this service in which you did not define them in the yaml manifest. Kubernetes did this for you.
+
+`kubectl get service nginx-service -o yaml`
+
+[Kubernetes Service Output](./Screenshots/kube-serv1.png)
+
+[Kubernetes Service Output](./Screenshots/kube-serv2.png)
+
+A clusterIP key is updated in the manifest and assigned an IP address. Even though you have specified a Loadbalancer service type, internally it still requires a clusterIP to route the external traffic through.
+In the ports section, nodePort is still used. This is because Kubernetes still needs to use a dedicated port on the worker node to route the traffic through. Ensure that port range 30000-32767 is opened in your inbound Security Group configuration.
+More information about the provisioned balancer is also published in the .status.loadBalancer field.
+
+[Status loadBalancer ingress Hostname](./Screenshots/status-elb-host.png)
+
+Copy and paste the load balancer’s address to the browser, and you will access the Nginx service:
+
+`aec0a25d03ab84fa381389c2d689aa04-877515519.eu-west-1.elb.amazonaws.com`
+
+[loadBalancer Browser Output](./Screenshots/elb-browser-output.png)
+
+
+USING DEPLOYMENT CONTROLLERS
+Do not Use Replication Controllers – Use Deployment Controllers Instead
+Kubernetes is loaded with a lot of features, and with its vibrant open source community, these features are constantly evolving and adding up.
+
+Previously, you have seen the improvements from ReplicationControllers (RC), to ReplicaSets (RS). In this section you will see another K8s object which is highly recommended over Replication objects (RC and RS).
+
+A Deployment is another layer above ReplicaSets and Pods, newer and more advanced level concept than ReplicaSets. It manages the deployment of ReplicaSets and allows for easy updating of a ReplicaSet as well as the ability to roll back to a previous version of deployment. It is declarative and can be used for rolling updates of micro-services, ensuring there is no downtime.
+
+Officially, it is highly recommended to use Deplyments to manage replica sets rather than using replica sets directly.
+
+Let us see Deployment in action.
+
+1. Delete the ReplicaSet:
+
+`kubectl delete rs nginx-rs`
+
+[Nginx-rs Delete](./Screenshots/nginx-rs-del.png)
+
+Understand the layout of the deployment.yaml manifest below. Lets go through the 3 separated sections:
+
+[Deployment Manifesr](./Screenshots/deploy-unders.png)
+
+3. Putting them altogether
+
+`apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    tier: frontend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        tier: frontend
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80`
+
+`kubectl apply -f deployment.yaml`
+
+[Deployment Create](./Screenshots/deploy-create.png)
+
+1. Get the Deployment:
+
+`kubectl get deployment`
+
+[Deployment Get](./Screenshots/deploy-get.png)
+
+2. Get the ReplicaSet:
+
+`kubectl get replicaset`
+
+[Replicaset Get](./Screenshots/replica-get.png)
+
+3. Get the Pods:
+
+`kubectl get pods`
+
+[Pods Get](./Screenshots/pod-get.png)
+
+4. Scale the replicas in the Deployment to 15 Pods:
+
+`kubectl scale deployment nginx-deployment --replicas=15`
+
+`kubectl get pods`
+
+[Scale Replica](./Screenshots/scale-replica-output.png)
+
+5. Exec into one of the Pod’s container to run Linux commands:
+
+`kubectl exec -it nginx-deployment-5d6cf97577-nhwg7 bash`
+
+`ls -ltr /etc/nginx/` in root mode
+
+[Exec](./Screenshots/exec-lst.png)
+
+Check the content of the default Nginx configuration file:
+
+`cat  /etc/nginx/conf.d/default.conf` in root mode
+
+[Cat Nginx Configuration file](./Screenshots/nginx-confg-root1.png)
+
+[Cat Nginx Configuration file](./Screenshots/nginx-confg-root2.png)
+
+Now, as we have got acquaited with most common Kubernetes workloads to deploy applications:
+
+[Kubernetes workloads](./Screenshots/kube-workld.png)
+
+
+
