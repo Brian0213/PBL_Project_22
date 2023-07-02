@@ -713,5 +713,73 @@ Now, as we have got acquaited with most common Kubernetes workloads to deploy ap
 
 [Kubernetes workloads](./Screenshots/kube-workld.png)
 
+PERSISTING DATA FOR PODS
+Deployments are stateless by design. Hence, any data stored inside the Pod’s container does not persist when the Pod dies.
 
+If you were to update the content of the index.html file inside the container, and the Pod dies, that content will not be lost since a new Pod will replace the dead one.
 
+Let us try that:
+
+Scale the Pods down to 1 replica:
+
+`kubectl scale deployment nginx-deployment --replicas=1`
+
+`kubectl get pods`
+
+[Scale Replica to 1](./Screenshots/scale-replica-one.png)
+
+2. Exec into the running container (figure out the command yourself)
+
+3. Install vim so that you can edit the file:
+
+`apt-get update`
+
+`apt-get install vim`
+
+4. Update the content of the file and add the code below /usr/share/nginx/html/index.html:
+
+`<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to DAREY.IO!</title>
+<style>
+    body {
+        width: 35em;
+        margin: 0 auto;
+        font-family: Tahoma, Verdana, Arial, sans-serif;
+    }
+</style>
+</head>
+<body>
+<h1>Welcome to DAREY.IO!</h1>
+<p>I love experiencing Kubernetes</p>
+
+<p>Learning by doing is absolutely the best strategy at 
+<a href="https://darey.io/">www.darey.io</a>.<br/>
+for skills acquisition
+<a href="https://darey.io/">www.darey.io</a>.</p>
+
+<p><em>Thank you for learning from DAREY.IO</em></p>
+</body>
+</html>`
+
+6. Now, delete the only running Pod:
+
+`kubectl delete po nginx-deployment-5d6cf97577-bz88g`
+
+Storage is a critical part of running containers, and Kubernetes offers some powerful primitives for managing it. Dynamic volume provisioning, a feature unique to Kubernetes, which allows storage volumes to be created on-demand. Without dynamic provisioning, DevOps engineers must manually make calls to the cloud or storage provider to create new storage volumes, and then create PersistentVolume objects to represent them in Kubernetes. The dynamic provisioning feature eliminates the need for DevOps to pre-provision storage. Instead, it automatically provisions storage when it is requested by users.
+
+To make the data persist in case of a Pod’s failure, you will need to configure the Pod to use following objects:
+
+Persistent Volume or pv – is a piece of storage in the cluster that has been provisioned by an administrator or dynamically provisioned using Storage Classes.
+Persistent Volume Claim or pvc. Persistent Volume Claim is simply a request for storage, hence the "claim" in its name.
+But where is it requesting this storage from?..
+
+In the next project,
+
+You will use Terraform to create a Kubernetes EKS cluster in AWS, and begin to use some powerful features such as PV, PVCs, ConfigMaps.
+You will also be introduced to packaging Kubernetes manifests using Helm
+Experience Dynamic provisioning of volumes to make your Pods stateful, using Kubernetes Statefulset
+Deploying applications into Kubernetes using Helm Charts
+And many more awesome technologies
+Keep it up!
