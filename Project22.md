@@ -92,7 +92,7 @@ FIX
 
 Create a cluster.yaml file `sudo vi cluster.yaml`.
 
-[Cluster Yaml File](./images/clust-yml.PNG)
+[Cluster Yaml File](./Screenshots/clust-yml.png)
 
 Ran `eksctl create cluster -f cluster.yaml`
 
@@ -120,7 +120,7 @@ Ran the command to confirm kubectl version
 
 `kubectl version --client --output=yaml`
 
-[Kubectl Latest Version](./Screenshots/late-kubectl-vers.PNG)
+[Kubectl Latest Version](./Screenshots/late-kubectl-vers.png)
 
 Ran `eksctl create cluster -f cluster.yaml` to create the cluster.yaml file
 
@@ -136,29 +136,29 @@ To delete cluster `eksctl delete cluster devtest`
 
 1. Create nginx-pod.yaml file in you home:
 
-[Nginx Pod Yaml](./Screenshots/nginx-pod.PNG)
+[Nginx Pod Yaml](./Screenshots/nginx-pod.png)
 
 2. Run this command:
 
 `kubectl apply -f nginx-pod.yaml`
 
-[Kubectl Nginx Pod](./Screenshots/nginx-pod-output.PNG)
+[Kubectl Nginx Pod](./Screenshots/nginx-pod-output.png)
 
 3. Create nginx-service.yaml file in you home:
 
-[Nginx Service Yaml](./Screenshots/nginx-service.PNG)
+[Nginx Service Yaml](./Screenshots/nginx-service.pmg)
 
 4. Run this command:
 
 `kubectl apply -f nginx-service.yaml`
 
-[Kubectl Nginx Service](./Screenshots/nginx-service-output.PNG) 
+[Kubectl Nginx Service](./Screenshots/nginx-service-output.png) 
 
 5. Run the command below to confirm the status of the service:
 
 `kubectl get services nginx-service`
 
-[Kubectl Nginx Service Status](./Screenshots/nginx-service-status.PNG)
+[Kubectl Nginx Service Status](./Screenshots/nginx-service-status.png)
 
 Step 1:
 
@@ -166,7 +166,7 @@ Run this command:
 
 `kubectl get service nginx-service -o wide`
 
-[Kubectl Get Nginx Service](./Screenshots/get-nginx-service.PNG)
+[Kubectl Get Nginx Service](./Screenshots/get-nginx-service.png)
 
 As you already know, the service’s type is ClusterIP, and in the above output, it has the IP address of 10.100.71.130 – This IP works just like an internal loadbalancer. It accepts requests and forwards it to an IP address of any Pod that has the respective selector label. In this case, it is app=nginx-pod. If there is more than one Pod with that label, service will distribute the traffic to all these pods in a Round Robin fashion.
 
@@ -174,13 +174,13 @@ Now, let us have a look at what the Pod looks like:
 
 `kubectl get pod nginx-pod --show-labels`
 
-[Kubectl Get Nginx Show Labels](./Screenshots/get-nginx-show-lab.PNG)
+[Kubectl Get Nginx Show Labels](./Screenshots/get-nginx-show-lab.png)
 
 Notice that the IP address of the Pod, is NOT the IP address of the server it is running on. Kubernetes, through the implementation of network plugins assigns virtual IP adrresses to each Pod.
 
 `kubectl get pod nginx-pod -o wide`
 
-[Kubectl Get Nginx Pod](./Screenshots/get-nginx-pod.PNG)
+[Kubectl Get Nginx Pod](./Screenshots/get-nginx-pod.png)
 
 Therefore, Service with IP 10.100.71.130 takes request and forwards to Pod with IP 172.50.197.236
 
@@ -192,7 +192,7 @@ Self Side Task:
 
 Update the nginx-service yaml to use a NodePort Service:
 
-[Kubectl Get Nginx Pod](./Screenshots/nginx-service-update.PNG)
+[Kubectl Get Nginx Pod](./Screenshots/nginx-service-update.png)
 
 Running the following commands to inspect the setup:
 
@@ -200,9 +200,9 @@ Running the following commands to inspect the setup:
 
 `kubectl describe pod nginx-pod`
 
-[Kubectl Get Describe Nginx Pod](./Screenshots/kube-get-desc-pods1.PNG)
+[Kubectl Get Describe Nginx Pod](./Screenshots/kube-get-desc-pods1.png)
 
-[Kubectl Get Describe Nginx Pod](./Screenshots/kube-get-desc-pods2.PNG)
+[Kubectl Get Describe Nginx Pod](./Screenshots/kube-get-desc-pods2.png)
 
 STEP 2: Accessing The Nginx Application Through A Browser
 
@@ -216,7 +216,7 @@ Running curl command and pointing it to the IP address of the Nginx Pod:
 
 `curl -v 192.168.48.219`
 
-[Curl](./Screenshots/curl-output.PNG)
+[Curl](./Screenshots/curl-output.png)
 
 Expose a Service on a server’s public IP address & static port
 
@@ -224,7 +224,7 @@ Sometimes, it may be needed to directly access the application using the public 
 
 A Node port service type exposes the service on a static port on the node’s IP address. NodePorts are in the 30000-32767 range by default, which means a NodePort is unlikely to match a service’s intended port (for example, 80 may be exposed as 30080).
 
-[Browser Output](./Screenshots/browser-output.PNG)
+[Browser Output](./Screenshots/browser-output.png)
 
 
 How Kubernetes ensures desired number of Pods is always running?
@@ -236,7 +236,7 @@ Let us delete our nginx-pod Pod:
 
 `kubectl delete -f nginx-pod.yaml`
 
-[Browser Output](./Screenshots/nginx-pod-delete.PNG)
+[Browser Output](./Screenshots/nginx-pod-delete.png)
 
 COMMON KUBERNETES OBJECTS
 Pod
