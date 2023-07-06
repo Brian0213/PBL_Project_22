@@ -1,3 +1,5 @@
+# DEPLOYING APPLICATIONS INTO KUBERNETES CLUSTER
+
 In this project, you will build upon your knowledge of Kubernetes architecture, and begin to deploy applications on a K8s cluster. Kubernetes has a lot of moving parts; it operates with several layers of abstraction between your application and host machines where it runs. So many terms, and capabilities that is not realistic to learn it all at once. Hence, you will be introduced to as many concepts as possible, but gradually.
 
 Within this project we are going to learn and see in action following:
@@ -783,3 +785,7 @@ Experience Dynamic provisioning of volumes to make your Pods stateful, using Kub
 Deploying applications into Kubernetes using Helm Charts
 And many more awesome technologies
 Keep it up!
+
+N.B: Ensure to delete all resources/cluster at the end of the project:
+
+To delete cluster `eksctl delete cluster devtest`
